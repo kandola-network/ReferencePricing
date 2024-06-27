@@ -5,30 +5,15 @@ import {
   IsPositive,
   ValidateIf,
 } from 'class-validator';
+import {
+  DatabaseEngine,
+  DeploymentOption,
+  RegionSlug,
+  ReservationType,
+  StorageMedia,
+} from '../pricing.interface';
+import { ApiPropertyOptional } from '@nestjs/swagger';
 
-export enum ReservationType {
-  ON_DEMAND = 'OnDemand',
-  RESERVED = 'Reserved',
-}
-export enum DatabaseEngine {
-  MYSQL = 'MySQL',
-  POSTGRES = 'PostgreSQL',
-}
-export enum RegionSlug {
-  aws_govcloud_us_east = 'aws-govcloud-us-east',
-  aws_govcloud_us_west = 'aws-govcloud-us-west',
-  africa_cape_town = 'africa-cape-town',
-  asia_pacific_hong_kong = 'asia-pacific-hong-kong',
-  asia_pacific_mumbai = 'asia-pacific-mumbai',
-}
-export enum DeploymentOption {
-  SINGLE_AZ = 'Single-AZ',
-  MULTI_AZ = 'Multi-AZ',
-}
-export enum storageMedia {
-  Magnetic = 'Magnetic',
-  SSD = 'SSD',
-}
 export class GetPricingDto {
   @IsEnum(RegionSlug)
   region: RegionSlug;
@@ -44,11 +29,16 @@ export class GetPricingDto {
   deploymentOption: DeploymentOption;
   @IsPositive()
   @IsInt()
+  @ApiPropertyOptional({
+    type: Number,
+    required: false,
+    description: 'Duration in years',
+  })
   @ValidateIf((o) => o.reservation === ReservationType.RESERVED)
   duration?: number;
-  @IsEnum(storageMedia)
-  storageMedia?: storageMedia;
+  @IsEnum(StorageMedia)
+  storageMedia: StorageMedia;
   @IsPositive()
   @IsInt()
-  storageSize?: number;
+  storageSize: number;
 }

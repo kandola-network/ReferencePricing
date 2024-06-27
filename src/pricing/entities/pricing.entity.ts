@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { ReservationType } from '../dto/get-pricing.dto';
+import { ReservationType } from '../pricing.interface';
 export enum CloudProvider {
   AWS = 'aws',
   GCP = 'gcp',

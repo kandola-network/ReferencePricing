@@ -1,39 +1,25 @@
-import { Injectable, Res } from '@nestjs/common';
-import { HttpService } from '@nestjs/axios';
-import { PricingSchemaClass } from './entities/pricing.entity';
-import { InjectModel } from '@nestjs/mongoose';
+import { CloudProvider, PricingSchemaClass } from './entities/pricing.entity';
 import { Model } from 'mongoose';
-import { GetPricingDto, ReservationType } from './dto/get-pricing.dto';
+import { CalculatePricing, ReservationType } from './pricing.interface';
 
-@Injectable()
-export class PricingService {
-  constructor(
-    @InjectModel(PricingSchemaClass.name)
-    private readonly pricingModel: Model<PricingSchemaClass>,
-  ) {}
-  // private paymentGateways: Record<string, PaymentGateway> = {};
-  //   export abstract class PaymentGateway {
-  //   abstract processPayment(order: Order): void;
-  // }
-  //   public registerPaymentGateway(
-  //     paymentMethod: PAYMENT_METHOD,
-  //     gateway: PaymentGateway,
-  //   ) {
-  //     this.paymentGateways[paymentMethod] = gateway;
-  //   }
+export interface PricingService {
+  calculatePrice(data: CalculatePricing): Promise<number>;
+}
 
-  async findOne(body: GetPricingDto) {
+export class AwsPricingService implements PricingService {
+  constructor(public readonly pricingModel: Model<PricingSchemaClass>) {}
+  async calculatePrice(data: CalculatePricing): Promise<number> {
     const query = {
-      provider: 'aws',
-      regionSlug: body.region,
-      databaseEngine: body.databaseEngine,
-      vcpu: { $gte: body.cpu },
-      memory: { $gte: body.memory },
-      reservations: body.reservation,
-      'offers.reservation': body.reservation,
-      deploymentOption: body.deploymentOption,
+      provider: CloudProvider.AWS,
+      regionSlug: data.region,
+      databaseEngine: data.databaseEngine,
+      vcpu: { $gte: data.cpu },
+      memory: { $gte: data.memory },
+      reservations: data.reservation,
+      'offers.reservation': data.reservation,
+      deploymentOption: data.deploymentOption,
     };
-    if (body.reservation == ReservationType.RESERVED)
+    if (data.reservation == ReservationType.RESERVED)
       query['offers.duration'] = 1;
     const instance = await this.pricingModel.findOne(query, {
       'offers.$': 1,
@@ -43,19 +29,27 @@ export class PricingService {
       sku: 1,
     });
     const storage = await this.pricingModel.findOne({
-      provider: 'aws',
-      regionSlug: body.region,
-      databaseEngine: body.databaseEngine,
-      reservations: body.reservation,
-      deploymentOption: body.deploymentOption,
-      minVolumeSize: { $gte: body.storageSize },
-      maxVolumeSize: { $lte: body.storageSize },
-      storageMedia: body.storageMedia,
+      provider: CloudProvider.AWS,
+      regionSlug: data.region,
+      databaseEngine: data.databaseEngine,
+      deploymentOption: data.deploymentOption,
+      $and: [
+        { minVolumeSize: { $lte: data.storageSize } },
+        { maxVolumeSize: { $gte: data.storageSize } },
+      ],
+      storageMedia: data.storageMedia,
     });
-    console.log(storage);
-    console.log(instance);
-    return {
-      AWS: instance.offers[0].pricePerUnit,
-    };
+    if (
+      instance != null &&
+      instance?.offers[0]?.pricePerUnit &&
+      storage &&
+      storage != null
+    ) {
+      const price = storage.offers[0].pricePerUnit * data.storageSize;
+      if (data.reservation == ReservationType.ON_DEMAND)
+        return instance.offers[0].pricePerUnit * 730 + price;
+      if (data.reservation == ReservationType.RESERVED)
+        return instance.offers[0].pricePerUnit / data.duration / 12 + price;
+    } else return null;
   }
 }
