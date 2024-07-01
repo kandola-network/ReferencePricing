@@ -11,6 +11,8 @@ import { ConfigModule } from '@nestjs/config';
     PricingModule,
     MongooseModule.forRoot(process.env.MONGO_URI, {
       dbName: process.env.MONGO_DB_NAME,
+      user: process.env.MONGO_USER,
+      pass: process.env.MONGO_PASS,
     }),
   ],
   controllers: [AppController],
