@@ -33,11 +33,8 @@ export class AwsPricingService implements PricingService {
       regionSlug: data.region,
       databaseEngine: data.databaseEngine,
       deploymentOption: data.deploymentOption,
-      $and: [
-        { minVolumeSize: { $lte: data.storageSize } },
-        { maxVolumeSize: { $gte: data.storageSize } },
-      ],
       storageMedia: data.storageMedia,
+      maxVolumeSize: { $gte: data.storageSize },
     });
     if (
       instance != null &&

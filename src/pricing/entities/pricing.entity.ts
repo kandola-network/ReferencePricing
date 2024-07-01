@@ -54,11 +54,19 @@ export class PricingSchemaClass {
 export const PricingSchema = SchemaFactory.createForClass(PricingSchemaClass);
 PricingSchema.index({
   provider: 1,
-  region: 1,
+  regionSlug: 1,
   reservations: 1,
   deploymentOption: 1,
   databaseEngine: 1,
   vcpu: 1,
   memory: 1,
-  type: 1,
+});
+PricingSchema.index({
+  provider: 1,
+  regionSlug: 1,
+  databaseEngine: 1,
+  deploymentOption: 1,
+  storageMedia: 1,
+  minVolumeSize: 1,
+  maxVolumeSize: 1,
 });
