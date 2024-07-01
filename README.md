@@ -32,6 +32,9 @@
 $ npm install
 ```
 
+## Environment Variables
+MONGO_URI
+
 ## Running the app
 
 ```bash
